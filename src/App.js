@@ -17,6 +17,8 @@ const TEST_GIFS = [
 const App = () => {
   const [hasSolana, setSolana] = useState(false);
   const [currAccount, setCurrentAccount] = useState("");
+  const [inputValue, setInputValue] = useState("");
+  const [gifs, setGifs] = useState([]);
 
   // Determine user account
   const checkWalletConnection = async () => {
@@ -53,6 +55,19 @@ const App = () => {
     setCurrentAccount(res.publicKey.toString());
   }
 
+  const onInputChange = (event) => {
+    const { value } = event.target;
+    setInputValue(value);
+  }
+
+  const sendGIF = async () => {
+    if (inputValue.length > 0) {
+      console.log('User GIF: ', inputValue)
+    } else {
+      console.log('No link provided.')
+    }
+  }
+
   const renderConnectWallet = () => {
     return (
       <button
@@ -67,13 +82,25 @@ const App = () => {
   const renderConnectedContainer = () => {
     return (
       <div className="connected-container">
+
+        // GIF input
+        <form onClick={(event) => {
+          event.preventDefault();
+          sendGIF();
+        }}>
+          <input type="text" placeholder="Enter your GIF link here" value={inputValue} onChange={onInputChange} />
+          <button type="submit" className="cta-button submit-gif-button">Submit</button>
+        </form>
+
+        // GIF display
         <div className="gif-grid">
-          {TEST_GIFS.map(gif => (
+          {gifs.map(gif => (
             <div className="gif-item" key={gif}>
               <img src={gif} alt={gif} />
             </div>
           ))}
         </div>
+
       </div>
     )
   }
@@ -85,6 +112,14 @@ const App = () => {
     window.addEventListener('load', onLoad)
     return () => window.removeEventListener('load', onLoad)
   }, [])
+
+  useEffect(() => {
+    if (currAccount) {
+      // Do Solana
+
+      setGifs(TEST_GIFS)
+    }
+  }, [currAccount])
 
   return (
     <div className="App">
