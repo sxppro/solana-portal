@@ -64,6 +64,20 @@ const App = () => {
     )
   }
 
+  const renderConnectedContainer = () => {
+    return (
+      <div className="connected-container">
+        <div className="gif-grid">
+          {TEST_GIFS.map(gif => (
+            <div className="gif-item" key={gif}>
+              <img src={gif} alt={gif} />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   useEffect(() => {
     const onLoad = async () => {
       await checkWalletConnection();
@@ -81,6 +95,7 @@ const App = () => {
             Memes for dreams ✨
           </p>
           {!currAccount && renderConnectWallet()}
+          {currAccount && renderConnectedContainer()}
         </div>
         <div className="footer-container">
           <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
