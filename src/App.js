@@ -1,7 +1,21 @@
 import { useState, useEffect } from 'react';
 import twitterLogo from './assets/twitter-logo.svg';
 import './App.css';
+import idl from './idl.json';
+import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
+import { Program, Provider, web3 } from '@project-serum/anchor';
 
+// Web3 components
+const { SystemProgram, Keypair } = web3;
+const programID = new PublicKey(idl.metadata.address);
+const network = clusterApiUrl('devnet');
+// Keypair for account that holds GIF data
+let baseAccount = Keypair.generate(); 
+// Controls how to acknowledge when transaction is 'done'
+const opts = {
+  preflightCommitment: "processed"
+}
+ 
 // Constants
 const TWITTER_HANDLE = 'Sopproo';
 const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
@@ -43,6 +57,7 @@ const App = () => {
     }
   };
 
+  // Establish wallet connection
   const connectWallet = async () => {
     if (!hasSolana) {
       return
@@ -53,6 +68,48 @@ const App = () => {
     const res = await solana.connect()
     console.log("Public key: ", res.publicKey.toString())
     setCurrentAccount(res.publicKey.toString());
+  }
+
+  // Establishes authenticated connection to Solana network
+  const getProvider = () => {
+    const connection = new Connection(network, opts.preflightCommitment);
+    const provider = new Provider(connection, window.solana, opts.preflightCommitment)
+    return provider;
+  }
+
+  // Initialises smart contract (calls start())
+  const createGifAccount = async () => {
+    try {
+      const provider = getProvider();
+      const program = new Program(idl, programID, provider);
+      console.log("Ping")
+      await program.rpc.start({
+        accounts: {
+          baseAccount: baseAccount.publicKey,
+          user: provider.wallet.publicKey,
+          systemProgram: SystemProgram.programId,
+        },
+        signers: [baseAccount],
+      });
+
+      console.log(`Pong: new BaseAccount created ${baseAccount.publicKey.toString()}`)
+    } catch (err) {
+      console.log(`Error in creating BaseAccount: ${err}`)
+    }
+  }
+
+  // Get GIFs
+  const getGifs = async () => {
+    try {
+      const provider = getProvider();
+      const program = new Program(idl, programID, provider);
+      const account = await program.account.baseAccount.fetch(baseAccount.publicKey);
+      console.log(`Account: ${account}`)
+      setGifs(account.gifList)  
+    } catch (err) {
+      console.log(`Error in getGifs: ${err}`)
+      setGifs(null)
+    }
   }
 
   const onInputChange = (event) => {
@@ -83,7 +140,7 @@ const App = () => {
     return (
       <div className="connected-container">
 
-        // GIF input
+        { /* GIF input */ }
         <form onClick={(event) => {
           event.preventDefault();
           sendGIF();
@@ -92,7 +149,7 @@ const App = () => {
           <button type="submit" className="cta-button submit-gif-button">Submit</button>
         </form>
 
-        // GIF display
+        { /* GIF display */ }
         <div className="gif-grid">
           {gifs.map(gif => (
             <div className="gif-item" key={gif}>
@@ -116,8 +173,8 @@ const App = () => {
   useEffect(() => {
     if (currAccount) {
       // Do Solana
-
-      setGifs(TEST_GIFS)
+      console.log("Fetching GIFs ...")
+      getGifs();
     }
   }, [currAccount])
 
